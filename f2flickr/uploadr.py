@@ -31,6 +31,7 @@ import sys
 import urllib2
 import webbrowser
 import exifread
+import subprocess
 
 import f2flickr.flickr as flickr
 import f2flickr.tags2set as tags2set
@@ -68,6 +69,13 @@ png
 avi
 mov
 '''.split())
+
+if configdict.configdict.has_section('FILTERS'):
+	FILTERS = dict(configdict.configdict.items('FILTERS'))
+	for k, v in configdict.configdict.defaults().items():
+		if FILTERS[k] == v:
+			del FILTERS[k]
+	ALLOWED_EXT |= set(FILTERS.keys())
 
 ##
 ##  You shouldn't need to modify anything below here
@@ -413,7 +421,17 @@ class Uploadr:
 
             picTags = picTags.strip()
             logging.info("Uploading image %s with tags %s", image, picTags)
-            photo = ('photo', image, open(image,'rb').read())
+
+            ext = image.lower().split(".")[-1]
+            if ext in FILTERS:
+                try:
+                    image_data = subprocess.check_output([FILTERS[ext], image])
+                except subprocess.CalledProcessError:
+                    print "Error calling the filter for '%s'" % (image)
+                    return None
+            else:
+                image_data = open(image,'rb').read()
+            photo = ('photo', image, image_data)
 
 
             d = {
