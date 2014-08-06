@@ -379,7 +379,7 @@ class Uploadr:
         """
         Upload a single image. Returns the photoid, or None on failure.
         """
-        folderTag = image[len(IMAGE_DIR):]
+        folderTag = os.path.relpath(image, IMAGE_DIR)
 
         if self.uploaded.has_key(folderTag):
             return None
