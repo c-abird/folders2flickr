@@ -17,7 +17,7 @@ for tag in flickr.tags_getListUserRaw().iter('tag'):
     if not raw.startswith('#'):
         continue
     clean = tag.get('clean')
-    tags[clean] = raw[1:].replace('#', ' ')
+    tags[clean] = raw[1:].replace('#', ' ').encode('utf8')
 
 photos = {}
 page = 1
