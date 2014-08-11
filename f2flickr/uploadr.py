@@ -377,6 +377,7 @@ class Uploadr:
             if self.abandonUploads:
                 # the idea here is ctrl-c in the middle will still create sets
                 break
+        self.uploaded.close()
 
     def uploadImage( self, image ):
         """
@@ -410,7 +411,7 @@ class Uploadr:
                 realTags = os.path.dirname(folderTag).split(os.sep)
                 realTags = (' '.join('"' + item + '"' for item in  realTags))
 
-            picTags = '#' + folderTag.replace(' ','#') + ' ' + realTags
+            picTags = '"#' + folderTag + '" ' + realTags
 
             if exiftags == {}:
                 logging.debug('NO_EXIF_HEADER for %s', image)
@@ -551,8 +552,10 @@ def main():
     for uploaded in uploadinstance.upload(images):
         uploadedNow.append(uploaded)
         if len(uploadedNow) > 20:
+            uploadinstance.uploaded.close()
             tags2set.createSets(uploadedNow, HISTORY_FILE)
             uploadedNow = []
+            uploadinstance.uploaded = shelve.open( HISTORY_FILE )
     if len(uploadedNow) > 0:
         tags2set.createSets(uploadedNow, HISTORY_FILE)
 
