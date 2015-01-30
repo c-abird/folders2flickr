@@ -32,6 +32,7 @@ import urllib2
 import webbrowser
 import exifread
 import string
+import subprocess
 from datetime import timedelta, datetime, time, date, tzinfo
 from itertools import groupby
 from os.path import dirname
@@ -69,12 +70,22 @@ XPKEYWORDS = 'Image XPKeywords'
 # file extensions that will be uploaded (compared as lower case)
 ALLOWED_EXT = set('''
 jpg
+jpeg
 gif
 png
 avi
 mp4
 mov
+mpg
+mpeg
 '''.split())
+
+if configdict.configdict.has_section('FILTERS'):
+	FILTERS = dict(configdict.configdict.items('FILTERS'))
+	for k, v in configdict.configdict.defaults().items():
+		if FILTERS[k] == v:
+			del FILTERS[k]
+	ALLOWED_EXT |= set(FILTERS.keys())
 
 ##
 ##  You shouldn't need to modify anything below here
@@ -373,12 +384,13 @@ class Uploadr:
             if self.abandonUploads:
                 # the idea here is ctrl-c in the middle will still create sets
                 break
+        self.uploaded.close()
 
     def uploadImage( self, image ):
         """
         Upload a single image. Returns the photoid, or None on failure.
         """
-        folderTag = image[len(IMAGE_DIR):]
+        folderTag = os.path.relpath(image, IMAGE_DIR)
 
         if self.uploaded.has_key(folderTag):
             stats=os.stat(image)
@@ -429,7 +441,7 @@ class Uploadr:
                 realTags = os.path.dirname(folderTag).split(os.sep)
                 realTags = (' '.join('"' + item + '"' for item in  realTags))
 
-            picTags = '#' + folderTag.replace(' ','#') + ' ' + realTags
+            picTags = '"#' + folderTag + '" ' + realTags
 
             #check if we need to override photo dates
             if configdict.get('override_dates', '0') == '1':
@@ -492,7 +504,17 @@ class Uploadr:
 
             picTags = picTags.strip()
             logging.info("Uploading image %s with tags %s", image, picTags)
-            photo = ('photo', image, open(image,'rb').read())
+
+            ext = image.lower().split(".")[-1]
+            if ext in FILTERS:
+                try:
+                    image_data = subprocess.check_output([FILTERS[ext], image])
+                except subprocess.CalledProcessError:
+                    print "Error calling the filter for '%s'" % (image)
+                    return None
+            else:
+                image_data = open(image,'rb').read()
+            photo = ('photo', image, image_data)
 
 
             d = {
