@@ -89,12 +89,13 @@ def createSets(uploadedNow, historyFile):
     keys = uploaded.keys()
     keys.sort()
     uploadedSets = set()
-    for uploadedid in uploadedNow:
-        try:
-            image = uploaded[str(uploadedid)]
-        except KeyError:
-            continue
-        uploadedSets.add(image2set(image))
+    if uploadedNow is not None:
+      for uploadedid in uploadedNow:
+          try:
+              image = uploaded[str(uploadedid)]
+          except KeyError:
+              continue
+          uploadedSets.add(image2set(image))
 
     lastSetName = ''
     photoSet = []
@@ -105,7 +106,7 @@ def createSets(uploadedNow, historyFile):
             continue
         setName = image2set(image)
         # only update sets that have been modified this round
-        if setName not in uploadedSets:
+        if setName not in uploadedSets and uploadedNow is not None:
             continue
 
         if (not lastSetName == setName and not lastSetName == ''):
